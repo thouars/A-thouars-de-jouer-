@@ -1,0 +1,23 @@
+À THOUARS DE JOUER — VERSION 2
+
+CONTENU
+- index.html : interface du site
+- style.css : design ludique et responsive
+- app.js : connexion, profils, parties et inscriptions
+- config.js : connexion à ton projet Supabase
+
+IMPORTANT
+1. Cette version est un premier site fonctionnel à tester, pas une mise en production certifiée.
+2. Elle utilise ton URL Supabase et ta clé Publishable. Une clé Publishable peut être présente dans le navigateur ; ne mets JAMAIS une clé Secret ou service_role dans les fichiers.
+3. Dans Supabase, le bucket de stockage doit avoir exactement l'identifiant "Avatars" et être public, comme dans la configuration réalisée.
+4. Les politiques SQL créées précédemment sont nécessaires. Vérifie que les règles de Storage utilisent le même identifiant de bucket.
+5. La confirmation d'e-mail Supabase peut être activée : dans ce cas, un nouveau membre doit confirmer son adresse avant de se connecter.
+6. Pour publier le site, tu peux héberger ces fichiers statiques sur GitHub Pages. Tous les fichiers sont à la racine du ZIP.
+
+LIMITES À CORRIGER AVANT UNE OUVERTURE PUBLIQUE
+- La capacité des parties doit être renforcée côté serveur avec une fonction SQL transactionnelle pour empêcher deux inscriptions simultanées à la dernière place.
+- L'édition de partie utilise de petites fenêtres de saisie ; une interface dédiée pourra la remplacer.
+- Prévoir une procédure de récupération de mot de passe et tester les règles RLS avec plusieurs comptes.
+- Le premier super administrateur est celui configuré dans Supabase pendant l'installation.
+
+Ne partage jamais ton mot de passe Supabase ni une clé Secret/service_role.
