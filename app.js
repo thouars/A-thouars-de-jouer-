@@ -302,11 +302,13 @@
     if (error) {
       box.innerHTML = '<div class="empty-state">Impossible de charger les parties : ' +
         escapeHtml(error.message) + '</div>';
+      await loadHistory();
       return;
     }
 
     if (!sessions?.length) {
       box.innerHTML = '<div class="empty-state">🎲 Aucune partie prévue pour le moment. Pourquoi ne pas en créer une ?</div>';
+      await loadHistory();
       return;
     }
 
@@ -372,6 +374,75 @@
     box.querySelectorAll("[data-edit]").forEach(b =>
       b.onclick = () => editSession(sessions.find(s => s.id === b.dataset.edit))
     );
+
+    await loadHistory();
+  }
+
+  async function loadHistory() {
+    const box = $("history-list");
+    if (!box) return;
+
+    box.innerHTML = '<div class="empty-state">Chargement de l’historique…</div>';
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: sessions, error } = await client.from("sessions")
+      .select("*")
+      .lt("session_date", today)
+      .order("session_date", { ascending: false });
+
+    if (error) {
+      box.innerHTML = '<div class="empty-state">Impossible de charger l’historique : ' +
+        escapeHtml(error.message) + '</div>';
+      return;
+    }
+
+    if (!sessions?.length) {
+      box.innerHTML = '<div class="empty-state">🎲 Aucune partie passée pour le moment. Les parties terminées apparaîtront ici.</div>';
+      return;
+    }
+
+    const ids = sessions.map(s => s.id);
+    const { data: regs, error: regsError } = await client.from("registrations")
+      .select("session_id,user_id")
+      .in("session_id", ids);
+
+    if (regsError) {
+      box.innerHTML = '<div class="empty-state">Impossible de charger les participants : ' +
+        escapeHtml(regsError.message) + '</div>';
+      return;
+    }
+
+    const userIds = [...new Set((regs || []).map(r => r.user_id))];
+    const { data: profiles, error: profilesError } = userIds.length
+      ? await client.from("profiles")
+          .select("id,username,first_name,last_name")
+          .in("id", userIds)
+      : { data: [], error: null };
+
+    if (profilesError) {
+      box.innerHTML = '<div class="empty-state">Impossible de charger les noms des participants : ' +
+        escapeHtml(profilesError.message) + '</div>';
+      return;
+    }
+
+    const pmap = Object.fromEntries((profiles || []).map(p => [
+      p.id,
+      ((p.username ? "@" + p.username + " • " : "") + (p.first_name || "")).trim() || "Membre"
+    ]));
+
+    box.innerHTML = sessions.map(s => {
+      const rs = (regs || []).filter(r => r.session_id === s.id);
+      const names = rs.map(r => escapeHtml(pmap[r.user_id] || "Membre"));
+
+      return `<article class="session-card history-card">
+        <h3>🏆 ${escapeHtml(s.game_name)}</h3>
+        <div class="session-meta">
+          <span class="pill">📅 ${escapeHtml(dateText(s.session_date))}</span>
+          <span class="pill">👥 ${rs.length} joueur${rs.length > 1 ? "s" : ""}</span>
+        </div>
+        <div class="participants">Participants : ${names.length ? names.join(", ") : "Aucun participant enregistré"}</div>
+      </article>`;
+    }).join("");
   }
 
   async function register(id) {
