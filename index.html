@@ -1,9 +1,8 @@
-
 <!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#6d4aff">
   <title>À Thouars de Jouer 🎲</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,33 +15,46 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#"><img class="brand-logo" src="logo-association.jpg" alt="Logo de À Thouars de Jouer" width="48" height="48" style="width:48px;height:48px;max-width:48px;max-height:48px;object-fit:contain;flex:0 0 48px;"><span>À Thouars de Jouer<small>On se retrouve autour d'une partie !</small></span></a>
-    <div class="top-actions"><span id="user-label" class="user-label"></span><button id="logout-btn" class="btn btn-light hidden">Déconnexion</button></div>
+    <a class="brand" href="#" aria-label="Accueil À Thouars de Jouer">
+      <img class="brand-logo" src="logo-association.jpg" alt="Logo de À Thouars de Jouer">
+      <span>À Thouars de Jouer<small>On se retrouve autour d'une partie !</small></span>
+    </a>
+    <div class="top-actions">
+      <span id="user-label" class="user-label"></span>
+      <button id="logout-btn" class="btn btn-light hidden" type="button">Déconnexion</button>
+    </div>
   </header>
 
   <main class="wrap">
     <section class="hero">
-      <div><span class="eyebrow">♟️ ASSOCIATION DE JEUX</span><h1>La prochaine partie<br><em>commence ici !</em></h1>
-      <p>Découvre les parties, retrouve les joueurs et réserve ta place en quelques clics.</p></div>
+      <div>
+        <span class="eyebrow">♟️ ASSOCIATION DE JEUX</span>
+        <h1>La prochaine partie<br><em>commence ici !</em></h1>
+        <p>Découvre les parties, retrouve les joueurs et réserve ta place en quelques clics.</p>
+      </div>
       <div class="hero-art" aria-hidden="true"><span>🎲</span><span>🃏</span><span>♟️</span><span>🎯</span></div>
     </section>
 
     <section id="auth-section" class="auth-grid">
       <div class="panel auth-panel">
-        <div class="panel-heading"><div><span class="eyebrow">BIENVENUE</span><h2>Content de te voir !</h2></div><span class="emoji">👋</span></div>
-        <div class="tabs"><button class="tab active" data-auth-tab="login">Connexion</button><button class="tab" data-auth-tab="signup">Créer un compte</button></div>
+        <div class="panel-heading">
+          <div><span class="eyebrow">BIENVENUE</span><h2>Content de te voir !</h2></div>
+          <span class="emoji">👋</span>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-auth-tab="login" type="button">Connexion</button>
+          <button class="tab" data-auth-tab="signup" type="button">Créer un compte</button>
+        </div>
         <form id="auth-form">
-          <div id="username-field" class="hidden">
-            <label>Pseudo
-              <input id="username" type="text" minlength="3" maxlength="20"
-                pattern="[A-Za-z0-9_-]{3,20}" autocomplete="username"
-                placeholder="Ex. : joueur123">
+          <div id="name-fields" class="hidden">
+            <div class="two-cols">
+              <label>Prénom<input id="first-name" autocomplete="given-name" maxlength="60"></label>
+              <label>Nom<input id="last-name" autocomplete="family-name" maxlength="60"></label>
+            </div>
+            <label id="username-field">Pseudo
+              <input id="username" autocomplete="nickname" minlength="3" maxlength="20" pattern="[A-Za-z0-9_-]{3,20}" placeholder="Ex. : joueur123">
+              <small class="field-help">3 à 20 caractères : lettres, chiffres, tiret ou tiret bas.</small>
             </label>
-            <p class="hint">3 à 20 caractères : lettres, chiffres, tiret ou tiret bas.</p>
-          </div>
-          <div id="name-fields" class="two-cols hidden">
-            <label>Prénom<input id="first-name" autocomplete="given-name" maxlength="60"></label>
-            <label>Nom<input id="last-name" autocomplete="family-name" maxlength="60"></label>
           </div>
           <label>Adresse e-mail<input id="email" type="email" autocomplete="email" required></label>
           <label>Mot de passe<input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
@@ -50,43 +62,58 @@
           <p class="hint">En créant un compte, tu pourras t'inscrire aux parties et gérer ton profil.</p>
         </form>
       </div>
-      <aside class="panel side-note"><div class="big-emoji">🎉</div><h3>Des jeux, des rencontres, du fun !</h3><p>Crée une partie, indique le nombre de places et retrouve les autres membres autour de tes jeux préférés.</p><div class="chips"><span>🧩 Jeux de société</span><span>👥 Rencontres</span><span>✨ Bonne humeur</span></div></aside>
+      <aside class="panel side-note">
+        <div class="big-emoji">🎉</div>
+        <h3>Des jeux, des rencontres, du fun !</h3>
+        <p>Crée une partie, indique le nombre de places et retrouve les autres membres autour de tes jeux préférés.</p>
+        <div class="chips"><span>🧩 Jeux de société</span><span>👥 Rencontres</span><span>✨ Bonne humeur</span></div>
+      </aside>
     </section>
 
     <section id="app-section" class="hidden">
-      <div class="welcome-row"><div><span class="eyebrow">TON ESPACE</span><h2 id="welcome-title">Bonjour !</h2><p>Prêt à jouer ? Voici les prochaines parties.</p></div><div class="profile-mini"><img id="avatar-preview" alt="Photo de profil"><label class="btn btn-light upload-label" for="avatar-file">📷 Photo</label><input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp" class="hidden"></div></div>
+      <div class="welcome-row">
+        <div><span class="eyebrow">TON ESPACE</span><h2 id="welcome-title">Bonjour !</h2><p>Prêt à jouer ? Voici les prochaines parties.</p></div>
+        <div class="profile-mini">
+          <img id="avatar-preview" alt="Photo de profil">
+          <label class="btn btn-light upload-label" for="avatar-file">📷 Photo</label>
+          <input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp" class="hidden">
+        </div>
+      </div>
+
       <div class="dashboard-grid">
         <section class="panel create-panel">
           <div class="panel-heading"><div><span class="eyebrow">À TOI DE JOUER</span><h2>Créer une partie</h2></div><span class="emoji">➕</span></div>
           <form id="session-form">
             <label>Nom du jeu<input id="game-name" placeholder="Ex. : Skyjo, Catan, Uno..." maxlength="100" required></label>
-            <div class="two-cols"><label>Date<input id="session-date" type="date" required></label><label>Nombre maximum de joueurs<input id="max-players" type="number" min="1" max="100" value="4" required></label></div>
+            <div class="two-cols">
+              <label>Date<input id="session-date" type="date" required></label>
+              <label>Nombre maximum de joueurs<input id="max-players" type="number" min="1" max="100" value="4" required></label>
+            </div>
             <label>Description <span class="optional">(facultatif)</span><textarea id="description" rows="3" maxlength="600" placeholder="Quelques détails sur la partie..."></textarea></label>
             <button class="btn btn-primary full" type="submit">Créer la partie <span>🎲</span></button>
           </form>
         </section>
+
         <section class="panel profile-panel">
           <div class="panel-heading"><div><span class="eyebrow">TON PROFIL</span><h2>Mes informations</h2></div><span class="emoji">👤</span></div>
           <form id="profile-form">
-            <label>Pseudo<input id="profile-username" type="text" minlength="3" maxlength="20"
-              pattern="[A-Za-z0-9_-]{3,20}" autocomplete="nickname" required
-              placeholder="Ex. : joueur123"></label>
-            <p class="hint">3 à 20 caractères : lettres, chiffres, tiret ou tiret bas.</p>
+            <label>Pseudo<input id="profile-username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_-]{3,20}" required></label>
             <label>Prénom<input id="profile-first" maxlength="60" required></label>
-            <label>Nom<input id="profile-last" maxlength="60" required></label>
+            <label>Nom<input id="profile-last" maxlength="60"></label>
             <button class="btn btn-light full" type="submit">Enregistrer mon profil</button>
           </form>
           <p class="hint">Ta photo est facultative. Les membres connectés peuvent voir les profils.</p>
         </section>
       </div>
+
       <section class="sessions-section">
-        <div class="section-title"><div><span class="eyebrow">LE CALENDRIER DES JOUEURS</span><h2>Les prochaines parties <span>✨</span></h2></div><button id="refresh-btn" class="btn btn-light">↻ Actualiser</button></div>
+        <div class="section-title">
+          <div><span class="eyebrow">LE CALENDRIER DES JOUEURS</span><h2>Les prochaines parties <span>✨</span></h2></div>
+          <button id="refresh-btn" class="btn btn-light" type="button">↻ Actualiser</button>
+        </div>
         <div id="sessions-list" class="sessions-grid"><div class="empty-state">Chargement des parties…</div></div>
       </section>
-      <section class="history-section">
-        <div class="section-title"><div><span class="eyebrow">NOS SOUVENIRS</span><h2>Historique des parties <span>🏆</span></h2></div></div>
-        <div id="history-list" class="sessions-grid"><div class="empty-state">Chargement de l’historique…</div></div>
-      </section>
+
       <section id="admin-section" class="panel admin-panel hidden">
         <div class="panel-heading"><div><span class="eyebrow">ESPACE ÉQUIPE</span><h2>Administration</h2></div><span class="emoji">👑</span></div>
         <p class="hint">Gestion des membres et modération des parties.</p>
