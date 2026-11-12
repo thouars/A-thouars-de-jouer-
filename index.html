@@ -1,4 +1,3 @@
-@@ -0,0 +1,95 @@
 <!doctype html>
 <html lang="fr">
 <head>
@@ -16,7 +15,7 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#"><img class="brand-logo" src="logo-association.jpg" alt="Logo de À Thouars de Jouer" width="48" height="48" style="width:48px;height:48px;max-width:48px;max-height:48px;object-fit:contain;flex:0 0 48px;"><span>À Thouars de Jouer<small>On se retrouve autour d'une partie !</small></span></a>
+    <a class="brand" href="#"><span class="brand-die">🎲</span><span>À Thouars de Jouer<small>On se retrouve autour d'une partie !</small></span></a>
     <div class="top-actions"><span id="user-label" class="user-label"></span><button id="logout-btn" class="btn btn-light hidden">Déconnexion</button></div>
   </header>
 
@@ -32,14 +31,6 @@
         <div class="panel-heading"><div><span class="eyebrow">BIENVENUE</span><h2>Content de te voir !</h2></div><span class="emoji">👋</span></div>
         <div class="tabs"><button class="tab active" data-auth-tab="login">Connexion</button><button class="tab" data-auth-tab="signup">Créer un compte</button></div>
         <form id="auth-form">
-          <div id="username-field" class="hidden">
-            <label>Pseudo
-              <input id="username" type="text" minlength="3" maxlength="20"
-                pattern="[A-Za-z0-9_-]{3,20}" autocomplete="username"
-                placeholder="Ex. : joueur123">
-            </label>
-            <p class="hint">3 à 20 caractères : lettres, chiffres, tiret ou tiret bas.</p>
-          </div>
           <div id="name-fields" class="two-cols hidden">
             <label>Prénom<input id="first-name" autocomplete="given-name" maxlength="60"></label>
             <label>Nom<input id="last-name" autocomplete="family-name" maxlength="60"></label>
@@ -68,10 +59,6 @@
         <section class="panel profile-panel">
           <div class="panel-heading"><div><span class="eyebrow">TON PROFIL</span><h2>Mes informations</h2></div><span class="emoji">👤</span></div>
           <form id="profile-form">
-            <label>Pseudo<input id="profile-username" type="text" minlength="3" maxlength="20"
-              pattern="[A-Za-z0-9_-]{3,20}" autocomplete="nickname" required
-              placeholder="Ex. : joueur123"></label>
-            <p class="hint">3 à 20 caractères : lettres, chiffres, tiret ou tiret bas.</p>
             <label>Prénom<input id="profile-first" maxlength="60" required></label>
             <label>Nom<input id="profile-last" maxlength="60" required></label>
             <button class="btn btn-light full" type="submit">Enregistrer mon profil</button>
