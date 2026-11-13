@@ -338,7 +338,9 @@
           ? `<button class="btn btn-light" data-edit="${escapeHtml(s.id)}">Modifier</button><button class="btn btn-light" data-delete="${escapeHtml(s.id)}">Supprimer</button>`
           : "";
 
-        return `<article class="session-card"><h3>🎲 ${escapeHtml(s.game_name)}</h3><div class="session-meta"><span class="pill">📅 ${escapeHtml(dateText(s.session_date))}</span><span class="pill">👥 ${rs.length}/${escapeHtml(s.max_players)} joueurs</span></div>${s.description ? `<p class="session-desc">${escapeHtml(s.description)}</p>` : ""}<div class="participants">Participants : ${names || "Pas encore de joueur"}</div><div class="card-actions">${action}${manage}</div></article>`;
+        const remaining = Math.max(0, Number(s.max_players) - rs.length);
+        const remainingLabel = remaining === 1 ? "place restante" : "places restantes";
+        return `<article class="session-card"><h3>🎲 ${escapeHtml(s.game_name)}</h3><div class="session-meta"><span class="pill">📅 ${escapeHtml(dateText(s.session_date))}</span><span class="pill">👥 ${rs.length}/${escapeHtml(s.max_players)} joueurs</span><span class="pill">🪑 ${remaining} ${remainingLabel}</span></div>${s.description ? `<p class="session-desc">${escapeHtml(s.description)}</p>` : ""}<div class="participants">Participants : ${names || "Pas encore de joueur"}</div><div class="card-actions">${action}${manage}</div></article>`;
       }).join("");
 
       box.querySelectorAll("[data-join]").forEach(b => b.onclick = () => register(b.dataset.join));
