@@ -89,6 +89,10 @@
       toast("Renseigne ton adresse e-mail et ton mot de passe.");
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast("Renseigne une adresse e-mail valide.");
+      return;
+    }
 
     if (authMode === "signup") {
       const username = $("username")?.value.trim() || "";
@@ -525,6 +529,9 @@
     document.querySelectorAll("[data-auth-tab]").forEach(b =>
       b.addEventListener("click", () => setMode(b.dataset.authTab))
     );
+    // Désactive la validation HTML native qui peut bloquer sans message
+    // un formulaire contenant des champs obligatoires masqués.
+    $("auth-form").noValidate = true;
     $("auth-form").addEventListener("submit", handleAuthSubmit);
     $("logout-btn")?.addEventListener("click", async () => {
       try {
