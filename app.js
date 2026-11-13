@@ -33,6 +33,8 @@
       b.classList.toggle("active", b.dataset.authTab === mode)
     );
     $("name-fields")?.classList.toggle("hidden", mode !== "signup");
+    const signupUsername = $("username");
+    if (signupUsername) signupUsername.required = mode === "signup";
     const submit = $("auth-submit");
     if (submit) {
       submit.innerHTML = mode === "signup"
@@ -48,6 +50,7 @@
     if (/invalid login credentials/i.test(message)) return "Adresse e-mail ou mot de passe incorrect.";
     if (/email not confirmed/i.test(message)) return "Ton adresse e-mail n'est pas encore confirmée. Vérifie ta boîte mail.";
     if (/user already registered/i.test(message)) return "Un compte existe déjà avec cette adresse e-mail.";
+    if (/profiles_username_unique|duplicate key value.*username|unique constraint/i.test(message)) return "Ce pseudo est déjà utilisé. Choisis-en un autre.";
     if (/password should be at least/i.test(message)) return "Le mot de passe doit contenir au moins 8 caractères.";
     if (/rate limit|too many requests/i.test(message)) return "Trop de tentatives. Attends un peu avant de réessayer.";
     return message;
@@ -88,8 +91,13 @@
     }
 
     if (authMode === "signup") {
+      const username = $("username")?.value.trim() || "";
       const firstName = $("first-name")?.value.trim() || "";
       const lastName = $("last-name")?.value.trim() || "";
+      if (!username) {
+        toast("Choisis un pseudo.");
+        return;
+      }
       if (!firstName || !lastName) {
         toast("Renseigne ton prénom et ton nom.");
         return;
@@ -111,6 +119,7 @@
           password,
           options: {
             data: {
+              username: $("username").value.trim(),
               first_name: $("first-name").value.trim(),
               last_name: $("last-name").value.trim()
             }
@@ -157,8 +166,12 @@
 
     currentProfile = data;
     $("welcome-title").textContent = "Bonjour" + (data?.first_name ? " " + data.first_name : "") + " !";
+    $("profile-username").value = data?.username || "";
     $("profile-first").value = data?.first_name || "";
     $("profile-last").value = data?.last_name || "";
+    if ($("user-label")) {
+      $("user-label").textContent = [data?.username, data?.first_name].filter(Boolean).join(" · ") || currentUser.email || "";
+    }
 
     $("avatar-preview").src = data?.avatar_url ||
       "data:image/svg+xml," + encodeURIComponent(
@@ -173,6 +186,7 @@
   async function loadApp() {
     await loadProfile();
     await loadSessions();
+    await loadHistory();
     if (["admin", "super_admin"].includes(currentProfile?.role)) {
       await loadMembers();
     }
@@ -181,7 +195,13 @@
   async function handleProfileSubmit(e) {
     e.preventDefault();
     try {
+      const username = $("profile-username").value.trim();
+      if (!username) {
+        toast("Renseigne ton pseudo.");
+        return;
+      }
       const { error } = await client.from("profiles").update({
+        username,
         first_name: $("profile-first").value.trim(),
         last_name: $("profile-last").value.trim()
       }).eq("id", currentUser.id);
@@ -289,12 +309,12 @@
 
       const userIds = [...new Set((regs || []).map(r => r.user_id))];
       const { data: profiles, error: profilesError } = userIds.length
-        ? await client.from("profiles").select("id,first_name,last_name").in("id", userIds)
+        ? await client.from("profiles").select("id,username,first_name,last_name").in("id", userIds)
         : { data: [] };
       if (profilesError) throw profilesError;
 
       const pmap = Object.fromEntries((profiles || []).map(p => [
-        p.id, ((p.first_name || "") + " " + (p.last_name || "")).trim() || "Membre"
+        p.id, [p.username, p.first_name].filter(Boolean).join(" · ") || ((p.first_name || "") + " " + (p.last_name || "")).trim() || "Membre"
       ]));
 
       box.innerHTML = sessions.map(s => {
@@ -322,6 +342,50 @@
     } catch (error) {
       console.error("Erreur de chargement des parties :", error);
       box.innerHTML = '<div class="empty-state">Impossible de charger les parties : ' + escapeHtml(error.message) + '</div>';
+    }
+  }
+
+  async function loadHistory() {
+    const box = $("history-list");
+    if (!box) return;
+    box.innerHTML = '<div class="empty-state">Chargement de l’historique…</div>';
+
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: sessions, error } = await client.from("sessions").select("*")
+        .lt("session_date", today)
+        .order("session_date", { ascending: false });
+      if (error) throw error;
+
+      if (!sessions?.length) {
+        box.innerHTML = '<div class="empty-state">Aucune partie passée pour le moment.</div>';
+        return;
+      }
+
+      const ids = sessions.map(s => s.id);
+      const { data: regs, error: regsError } = await client.from("registrations")
+        .select("session_id,user_id").in("session_id", ids);
+      if (regsError) throw regsError;
+
+      const userIds = [...new Set((regs || []).map(r => r.user_id))];
+      const { data: profiles, error: profilesError } = userIds.length
+        ? await client.from("profiles").select("id,username,first_name,last_name").in("id", userIds)
+        : { data: [], error: null };
+      if (profilesError) throw profilesError;
+
+      const pmap = Object.fromEntries((profiles || []).map(p => [
+        p.id, [p.username, p.first_name].filter(Boolean).join(" · ") ||
+          ((p.first_name || "") + " " + (p.last_name || "")).trim() || "Membre"
+      ]));
+
+      box.innerHTML = sessions.map(s => {
+        const rs = (regs || []).filter(r => r.session_id === s.id);
+        const names = rs.map(r => escapeHtml(pmap[r.user_id] || "Membre")).join(", ");
+        return `<article class="session-card"><h3>🎲 ${escapeHtml(s.game_name)}</h3><div class="session-meta"><span class="pill">📅 ${escapeHtml(dateText(s.session_date))}</span><span class="pill">👥 ${rs.length}/${escapeHtml(s.max_players)} joueurs</span></div>${s.description ? `<p class="session-desc">${escapeHtml(s.description)}</p>` : ""}<div class="participants">Participants : ${names || "Aucun participant enregistré"}</div></article>`;
+      }).join("");
+    } catch (error) {
+      console.error("Erreur de chargement de l’historique :", error);
+      box.innerHTML = '<div class="empty-state">Impossible de charger l’historique : ' + escapeHtml(error.message) + '</div>';
     }
   }
 
