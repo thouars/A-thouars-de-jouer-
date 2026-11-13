@@ -32,6 +32,7 @@
         <div class="tabs"><button class="tab active" data-auth-tab="login">Connexion</button><button class="tab" data-auth-tab="signup">Créer un compte</button></div>
         <form id="auth-form">
           <div id="name-fields" class="two-cols hidden">
+            <label>Pseudo<input id="username" autocomplete="nickname" maxlength="20" placeholder="Ex. : Logan" required></label>
             <label>Prénom<input id="first-name" autocomplete="given-name" maxlength="60"></label>
             <label>Nom<input id="last-name" autocomplete="family-name" maxlength="60"></label>
           </div>
@@ -59,6 +60,7 @@
         <section class="panel profile-panel">
           <div class="panel-heading"><div><span class="eyebrow">TON PROFIL</span><h2>Mes informations</h2></div><span class="emoji">👤</span></div>
           <form id="profile-form">
+            <label>Pseudo<input id="profile-username" maxlength="20" autocomplete="nickname" required></label>
             <label>Prénom<input id="profile-first" maxlength="60" required></label>
             <label>Nom<input id="profile-last" maxlength="60" required></label>
             <button class="btn btn-light full" type="submit">Enregistrer mon profil</button>
@@ -69,6 +71,10 @@
       <section class="sessions-section">
         <div class="section-title"><div><span class="eyebrow">LE CALENDRIER DES JOUEURS</span><h2>Les prochaines parties <span>✨</span></h2></div><button id="refresh-btn" class="btn btn-light">↻ Actualiser</button></div>
         <div id="sessions-list" class="sessions-grid"><div class="empty-state">Chargement des parties…</div></div>
+      </section>
+      <section class="sessions-section history-section">
+        <div class="section-title"><div><span class="eyebrow">NOS SOUVENIRS DE JEU</span><h2>Historique des parties</h2></div></div>
+        <div id="history-list" class="sessions-grid"><div class="empty-state">Chargement de l'historique…</div></div>
       </section>
       <section id="admin-section" class="panel admin-panel hidden">
         <div class="panel-heading"><div><span class="eyebrow">ESPACE ÉQUIPE</span><h2>Administration</h2></div><span class="emoji">👑</span></div>
