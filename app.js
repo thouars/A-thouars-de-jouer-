@@ -122,6 +122,8 @@
           email,
           password,
           options: {
+            // Après confirmation, revenir sur le site publié (GitHub Pages).
+            emailRedirectTo: window.location.origin + window.location.pathname,
             data: {
               username: $("username").value.trim(),
               first_name: $("first-name").value.trim(),
