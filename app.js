@@ -155,6 +155,10 @@
 
       toast(authMode === "signup" ? "Compte créé et connexion réussie !" : "Connexion réussie !");
       await refreshAuth();
+      if (currentUser) {
+        client.functions.invoke("super-admin-portal", { body: { action: "log_login" } })
+          .catch(error => console.warn("Journal de connexion indisponible :", error));
+      }
     } catch (error) {
       console.error("Erreur de connexion/inscription :", error);
       toast(friendlyAuthError(error));
@@ -541,10 +545,10 @@
 
   async function loadPublicSiteControl() {
     try {
-      const { data, error } = await client.from("site_control")
-        .select("maintenance_enabled,maintenance_message,registrations_enabled").eq("id", 1).maybeSingle();
+      const { data, error } = await client.functions.invoke("public-site-state");
       if (error) throw error;
-      if (data) siteControl = data;
+      if (data?.error) throw new Error(data.error);
+      if (data?.site_control) siteControl = data.site_control;
     } catch (error) {
       console.warn("État public du site indisponible :", error);
     }
@@ -710,10 +714,9 @@
         superAdminRequest("list_admins"),
         superAdminRequest("list_sessions"),
         superAdminRequest("list_logs"),
-        client.from("site_control").select("maintenance_enabled,maintenance_message,registrations_enabled").eq("id", 1).maybeSingle()
+        superAdminRequest("get_site_control")
       ]);
-      if (control.error) throw control.error;
-      siteControl = control.data || siteControl;
+      siteControl = control.site_control || siteControl;
       const stats = dashboard.stats || {};
       const statItems = [
         ["Membres", stats.members || 0], ["Administrateurs", stats.admins || 0],
@@ -767,6 +770,10 @@
       if (error) throw error;
       toast("Connexion avec la clé d’accès réussie !");
       await refreshAuth();
+      if (currentUser) {
+        client.functions.invoke("super-admin-portal", { body: { action: "log_login" } })
+          .catch(error => console.warn("Journal de connexion indisponible :", error));
+      }
     } catch (error) {
       console.error("Connexion par clé d’accès impossible :", error);
       toast(friendlyAuthError(error));
