@@ -31,3 +31,8 @@
 }
 .password-toggle:hover { background: #eee8ff; }
 .password-toggle:focus-visible { outline: 2px solid var(--purple, #6d4aff); outline-offset: 2px; }
+
+/* Logos de l’association dans les quatre vignettes de la bannière */
+.hero-art span { overflow: hidden; }
+.hero-art span img { width: 76%; height: 76%; object-fit: contain; border-radius: 50%; filter: drop-shadow(0 3px 5px #35205b30); }
+@media(max-width:760px){.hero-art span img{width:82%;height:82%;}}
