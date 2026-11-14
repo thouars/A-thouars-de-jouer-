@@ -38,7 +38,7 @@
             <label>Nom<input id="last-name" autocomplete="family-name" maxlength="60"></label>
           </div>
           <label>Adresse e-mail<input id="email" type="email" autocomplete="email" required></label>
-          <label>Mot de passe<input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
+          <label>Mot de passe<div class="password-field"><input id="password" type="password" autocomplete="current-password" minlength="8" required><button class="password-toggle" id="password-toggle" type="button" aria-label="Afficher le mot de passe" aria-pressed="false">👁️</button></div></label>
           <button class="btn btn-primary full" type="submit" id="auth-submit">Se connecter <span>→</span></button>
           <p class="hint">En créant un compte, tu pourras t'inscrire aux parties et gérer ton profil.</p>
         </form>
