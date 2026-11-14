@@ -50,3 +50,6 @@
 .hero-logo{flex:0 0 180px;width:180px;height:180px;display:flex;align-items:center;justify-content:center;transform:none;background:transparent;border:0;}
 .hero-logo img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;}
 @media(max-width:760px){.hero-logo{flex:0 0 105px;width:105px;height:105px;}}
+
+/* Logo de la bannière : rendu circulaire */
+.hero-logo img{border-radius:50%;object-fit:contain;}
