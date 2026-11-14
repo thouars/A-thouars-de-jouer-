@@ -729,9 +729,19 @@
       window.saMembers = memberData.members || [];
       window.saSessions = sessionData.sessions || [];
       renderSuperAdminMembers(window.saMembers);
-      $("sa-admins").innerHTML = (adminData.members || []).length ? adminData.members.map(m =>
-        '<div class="sa-row"><div class="sa-row-main"><strong>' + escapeHtml([m.username, m.first_name, m.last_name].filter(Boolean).join(" · ") || "Administrateur") + '</strong><small>' + escapeHtml(m.email || "") + '</small><small>' + escapeHtml(m.role) + ' · ' + escapeHtml(m.account_status || "active") + '</small></div></div>'
-      ).join("") : '<div class="empty-state">Aucun administrateur supplémentaire.</div>';
+      $("sa-admins").innerHTML = (adminData.members || []).length ? adminData.members.map(m => {
+        const role = m.role || "admin";
+        const statusValue = m.account_status || "active";
+        const label = [m.username, m.first_name, m.last_name].filter(Boolean).join(" · ") || "Administrateur";
+        return '<div class="sa-row"><div class="sa-row-main"><strong>' + escapeHtml(label) + '</strong><small>' + escapeHtml(m.email || "") + '</small><small>' + escapeHtml(role) + ' · ' + escapeHtml(statusValue) + '</small></div>' +
+          (m.id === currentUser.id ? '<span class="admin-tag">Votre compte</span>' :
+          '<div class="sa-row-actions"><select data-sa-role="' + escapeHtml(m.id) + '" aria-label="Rôle de ' + escapeHtml(label) + '">' +
+          '<option value="member" ' + (role === "member" ? "selected" : "") + '>Membre</option>' +
+          '<option value="admin" ' + (role === "admin" ? "selected" : "") + '>Administrateur</option>' +
+          '<option value="super_admin" ' + (role === "super_admin" ? "selected" : "") + '>Super-administrateur</option></select>' +
+          '<button class="btn btn-light" type="button" data-sa-status="' + escapeHtml(m.id) + '" data-status="' + escapeHtml(statusValue) + '">' + (statusValue === "suspended" ? "Réactiver" : "Suspendre") + '</button></div>') +
+          '</div>';
+      }).join("") : '<div class="empty-state">Aucun administrateur supplémentaire.</div>';
       $("sa-sessions").innerHTML = window.saSessions.length ? window.saSessions.map(s =>
         '<div class="sa-row"><div class="sa-row-main"><strong>🎲 ' + escapeHtml(s.game_name) + '</strong><small>📅 ' + escapeHtml(dateText(s.session_date)) + ' · ' + Number(s.participant_count || 0) + '/' + Number(s.max_players) + ' joueurs</small></div><div class="sa-row-actions"><button class="btn btn-light" type="button" data-sa-edit-session="' + escapeHtml(s.id) + '">Modifier</button><button class="btn btn-light" type="button" data-sa-delete-session="' + escapeHtml(s.id) + '">Supprimer</button></div></div>'
       ).join("") : '<div class="empty-state">Aucune partie enregistrée.</div>';
