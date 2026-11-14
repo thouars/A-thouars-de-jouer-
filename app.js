@@ -490,18 +490,24 @@
             ? `<select data-role="${escapeHtml(m.id)}" aria-label="Rôle du membre">
                 <option value="member" ${m.role === "member" ? "selected" : ""}>Membre</option>
                 <option value="admin" ${m.role === "admin" ? "selected" : ""}>Administrateur</option>
+                <option value="super_admin" ${m.role === "super_admin" ? "selected" : ""}>Super-administrateur</option>
               </select>`
             : `<span class="admin-tag">${m.role === "super_admin" ? "Super admin" : m.role === "admin" ? "Admin" : "Membre"}</span>`}
         </div>`).join("");
 
       box.querySelectorAll("[data-role]").forEach(sel => sel.onchange = async () => {
+        sel.disabled = true;
         try {
-          const { error } = await client.from("profiles").update({ role: sel.value }).eq("id", sel.dataset.role);
+          const { data, error } = await client.functions.invoke("set-member-role", {
+            body: { user_id: sel.dataset.role, role: sel.value }
+          });
           if (error) throw error;
+          if (data?.error) throw new Error(data.error);
           toast("Rôle mis à jour.");
           await loadMembers();
         } catch (error) {
-          toast(error.message);
+          toast(error.message || "Modification du rôle impossible.");
+          await loadMembers();
         }
       });
     } catch (error) {
