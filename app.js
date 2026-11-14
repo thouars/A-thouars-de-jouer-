@@ -466,21 +466,24 @@
 
   async function loadMembers() {
     const box = $("admin-members");
+    box.innerHTML = '<div class="empty-state">Chargement des membres…</div>';
     try {
-      const { data, error } = await client.from("profiles")
-        .select("id,first_name,last_name,role,created_at")
-        .order("created_at", { ascending: false });
+      const { data, error } = await client.functions.invoke("admin-members");
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const members = data?.members || [];
 
-      if (!data?.length) {
+      if (!members.length) {
         box.textContent = "Aucun membre.";
         return;
       }
 
       const isSuper = currentProfile?.role === "super_admin";
-      box.innerHTML = data.map(m => `
+      box.innerHTML = members.map(m => `
         <div class="admin-member">
-          <div>${escapeHtml(((m.first_name || "") + " " + (m.last_name || "")).trim() || "Membre")}
+          <div>
+            <strong>${escapeHtml(((m.first_name || "") + " " + (m.last_name || "")).trim() || "Membre")}</strong>
+            <small>✉️ ${escapeHtml(m.email || "Adresse e-mail indisponible")}</small>
             <small>${escapeHtml(m.role)} • ${escapeHtml(m.id.slice(0, 8))}…</small>
           </div>
           ${isSuper && m.id !== currentUser.id
@@ -502,7 +505,8 @@
         }
       });
     } catch (error) {
-      box.textContent = "Erreur : " + error.message;
+      console.error("Erreur de chargement des membres :", error);
+      box.textContent = "Impossible de charger les membres : " + (error.message || "Erreur inconnue");
     }
   }
 
