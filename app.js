@@ -6,6 +6,8 @@
   let authMode = "login";
   let currentUser = null;
   let currentProfile = null;
+  let siteControl = { maintenance_enabled: false, maintenance_message: "", registrations_enabled: true };
+  let superAdminUIReady = false;
 
   const toast = (message) => {
     const el = $("toast");
@@ -35,6 +37,11 @@
     $("name-fields")?.classList.toggle("hidden", mode !== "signup");
     const signupUsername = $("username");
     if (signupUsername) signupUsername.required = mode === "signup";
+    const signupTab = document.querySelector('[data-auth-tab="signup"]');
+    if (signupTab) {
+      signupTab.classList.toggle("hidden", !siteControl.registrations_enabled);
+      signupTab.disabled = !siteControl.registrations_enabled;
+    }
     const submit = $("auth-submit");
     if (submit) {
       submit.innerHTML = mode === "signup"
@@ -188,6 +195,9 @@
 
     const staff = ["admin", "super_admin"].includes(data?.role);
     $("admin-section").classList.toggle("hidden", !staff);
+    const isSuper = data?.role === "super_admin";
+    $("super-admin-nav")?.classList.toggle("hidden", !isSuper);
+    $("super-admin-section")?.classList.toggle("hidden", !isSuper);
     return data;
   }
 
@@ -196,6 +206,16 @@
     await loadPasskeys();
     await loadSessions();
     await loadHistory();
+    if (siteControl.maintenance_enabled && currentProfile?.role !== "super_admin") {
+      $("app-section")?.classList.add("hidden");
+      $("auth-section")?.classList.remove("hidden");
+      $("auth-form")?.classList.add("hidden");
+      $("site-notice")?.classList.remove("hidden");
+      return;
+    } else {
+      $("auth-form")?.classList.remove("hidden");
+    }
+    await loadSuperAdmin();
     if (["admin", "super_admin"].includes(currentProfile?.role)) {
       await loadMembers();
     }
@@ -516,6 +536,229 @@
     }
   }
 
+
+  let siteControl = { maintenance_enabled: false, maintenance_message: "", registrations_enabled: true };
+  let superAdminUIReady = false;
+
+  async function loadPublicSiteControl() {
+    try {
+      const { data, error } = await client.from("site_control")
+        .select("maintenance_enabled,maintenance_message,registrations_enabled").eq("id", 1).maybeSingle();
+      if (error) throw error;
+      if (data) siteControl = data;
+    } catch (error) {
+      console.warn("État public du site indisponible :", error);
+    }
+    applySiteControls();
+  }
+
+  function applySiteControls() {
+    const notice = $("site-notice");
+    const signupTab = document.querySelector('[data-auth-tab="signup"]');
+    const signupMode = authMode === "signup";
+    if (signupTab) {
+      signupTab.classList.toggle("hidden", !siteControl.registrations_enabled);
+      signupTab.disabled = !siteControl.registrations_enabled;
+    }
+    if (signupMode && !siteControl.registrations_enabled) setMode("login");
+    if (notice) {
+      const maintenance = siteControl.maintenance_enabled;
+      notice.classList.toggle("hidden", !maintenance);
+      notice.textContent = maintenance ? (siteControl.maintenance_message || "Le site est temporairement en maintenance.") : "";
+    }
+  }
+
+  async function superAdminRequest(action, payload = {}) {
+    const { data, error } = await client.functions.invoke("super-admin-portal", { body: { action, ...payload } });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data || {};
+  }
+
+  function setupSuperAdminUI() {
+    const content = $("super-admin-content");
+    if (!content || superAdminUIReady) return;
+    superAdminUIReady = true;
+    content.innerHTML =
+      '<div class="panel-heading"><div><span class="eyebrow">ACCÈS PRIVILÉGIÉ</span><h2>Centre Super-Administrateur</h2></div><span class="emoji">👑</span></div>' +
+      '<p class="hint">Espace confidentiel : les réglages et actions sont vérifiés côté serveur.</p>' +
+      '<div class="sa-toolbar"><button id="sa-refresh" class="btn btn-light" type="button">↻ Actualiser les données</button><span id="sa-status" class="hint"></span></div>' +
+      '<section class="sa-block"><h3>📊 Tableau de bord statistique</h3><div id="sa-stats" class="sa-stats"><div class="empty-state">Chargement des statistiques…</div></div></section>' +
+      '<section class="sa-block"><h3>⚙️ Mode maintenance et contrôle du site</h3><div class="sa-controls">' +
+      '<label class="sa-toggle"><input id="sa-maintenance" type="checkbox"> Activer le mode maintenance</label>' +
+      '<label class="sa-toggle"><input id="sa-signups" type="checkbox"> Autoriser les nouvelles inscriptions</label>' +
+      '</div><label>Message affiché pendant la maintenance<input id="sa-maintenance-message" maxlength="500" placeholder="Le site est temporairement en maintenance."></label>' +
+      '<button id="sa-save-control" class="btn btn-primary" type="button">Enregistrer les réglages</button></section>' +
+      '<section class="sa-block"><h3>👥 Gestion avancée des utilisateurs</h3><input id="sa-member-search" type="search" placeholder="Rechercher par pseudo, nom ou e-mail…"><div id="sa-members" class="sa-list">Chargement…</div></section>' +
+      '<section class="sa-block"><h3>🛡️ Gestion avancée des administrateurs</h3><p class="hint">Promouvoir, rétrograder ou suspendre les comptes d’administration.</p><div id="sa-admins" class="sa-list">Chargement…</div></section>' +
+      '<section class="sa-block"><h3>🎲 Gestion complète des parties</h3><div id="sa-sessions" class="sa-list">Chargement…</div></section>' +
+      '<section class="sa-block"><h3>🔐 Journal de sécurité et des actions</h3><div id="sa-logs" class="sa-list">Chargement…</div></section>';
+
+    $("super-admin-tab")?.addEventListener("click", () => {
+      $("super-admin-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    $("sa-refresh")?.addEventListener("click", loadSuperAdminData);
+    $("sa-save-control")?.addEventListener("click", saveSiteControl);
+    $("sa-member-search")?.addEventListener("input", () => renderSuperAdminMembers(window.saMembers || []));
+    content.addEventListener("change", async (event) => {
+      const roleSelect = event.target.closest("[data-sa-role]");
+      if (!roleSelect) return;
+      roleSelect.disabled = true;
+      try {
+        await superAdminRequest("set_role", { user_id: roleSelect.dataset.saRole, role: roleSelect.value });
+        toast("Rôle du compte mis à jour.");
+        await loadSuperAdminData();
+      } catch (error) {
+        toast(error.message || "Modification du rôle impossible.");
+        await loadSuperAdminData();
+      }
+    });
+    content.addEventListener("click", async (event) => {
+      const statusButton = event.target.closest("[data-sa-status]");
+      const editButton = event.target.closest("[data-sa-edit-session]");
+      const deleteButton = event.target.closest("[data-sa-delete-session]");
+      if (statusButton) {
+        const next = statusButton.dataset.status === "suspended" ? "active" : "suspended";
+        const promptText = next === "suspended" ? "Suspendre ce compte ? Il ne pourra plus se connecter." : "Réactiver ce compte ?";
+        if (!confirm(promptText)) return;
+        statusButton.disabled = true;
+        try {
+          await superAdminRequest("set_status", { user_id: statusButton.dataset.saStatus, status: next });
+          toast(next === "suspended" ? "Compte suspendu." : "Compte réactivé.");
+          await loadSuperAdminData();
+        } catch (error) {
+          toast(error.message || "Action impossible.");
+          await loadSuperAdminData();
+        }
+      }
+      if (editButton) {
+        const id = editButton.dataset.saEditSession;
+        const session = (window.saSessions || []).find(item => item.id === id);
+        if (!session) return;
+        const game_name = prompt("Nom du jeu :", session.game_name);
+        if (game_name === null) return;
+        const session_date = prompt("Date (AAAA-MM-JJ) :", session.session_date);
+        if (session_date === null) return;
+        const max_players = Number(prompt("Nombre maximum de joueurs :", session.max_players));
+        if (!Number.isInteger(max_players)) return;
+        const description = prompt("Description :", session.description || "");
+        if (description === null) return;
+        try {
+          await superAdminRequest("update_session", { id, game_name, session_date, max_players, description });
+          toast("Partie mise à jour.");
+          await loadSuperAdminData();
+        } catch (error) { toast(error.message || "Modification impossible."); }
+      }
+      if (deleteButton) {
+        const id = deleteButton.dataset.saDeleteSession;
+        if (!confirm("Supprimer définitivement cette partie et ses inscriptions ?")) return;
+        try {
+          await superAdminRequest("delete_session", { id });
+          toast("Partie supprimée.");
+          await loadSuperAdminData();
+          await loadSessions();
+          await loadHistory();
+        } catch (error) { toast(error.message || "Suppression impossible."); }
+      }
+    });
+  }
+
+  function renderSuperAdminMembers(members) {
+    const box = $("sa-members");
+    if (!box) return;
+    const search = ($("sa-member-search")?.value || "").trim().toLowerCase();
+    const filtered = members.filter(m => [m.username, m.first_name, m.last_name, m.email, m.role].join(" ").toLowerCase().includes(search));
+    if (!filtered.length) { box.innerHTML = '<div class="empty-state">Aucun compte correspondant.</div>'; return; }
+    box.innerHTML = filtered.map(m => {
+      const label = [m.username, [m.first_name, m.last_name].filter(Boolean).join(" ")].filter(Boolean).join(" · ") || "Membre";
+      const role = ["member","admin","super_admin"].includes(m.role) ? m.role : "member";
+      const status = m.account_status || "active";
+      return '<div class="sa-row"><div class="sa-row-main"><strong>' + escapeHtml(label) + '</strong><small>✉️ ' + escapeHtml(m.email || "E-mail indisponible") + '</small><small>' + escapeHtml(role) + ' · ' + escapeHtml(status) + '</small></div>' +
+        (m.id === currentUser.id ? '<span class="admin-tag">Votre compte</span>' :
+        '<div class="sa-row-actions"><select data-sa-role="' + escapeHtml(m.id) + '" aria-label="Rôle de ' + escapeHtml(label) + '">' +
+        '<option value="member" ' + (role === "member" ? "selected" : "") + '>Membre</option>' +
+        '<option value="admin" ' + (role === "admin" ? "selected" : "") + '>Administrateur</option>' +
+        '<option value="super_admin" ' + (role === "super_admin" ? "selected" : "") + '>Super-administrateur</option></select>' +
+        '<button class="btn btn-light" type="button" data-sa-status="' + escapeHtml(m.id) + '" data-status="' + escapeHtml(status) + '">' + (status === "suspended" ? "Réactiver" : "Suspendre") + '</button></div>') +
+        '</div>';
+    }).join("");
+  }
+
+  async function saveSiteControl() {
+    const button = $("sa-save-control");
+    button.disabled = true;
+    try {
+      const maintenance_enabled = $("sa-maintenance").checked;
+      const registrations_enabled = $("sa-signups").checked;
+      const maintenance_message = $("sa-maintenance-message").value.trim();
+      await superAdminRequest("update_site_control", { maintenance_enabled, registrations_enabled, maintenance_message });
+      siteControl = { maintenance_enabled, registrations_enabled, maintenance_message };
+      applySiteControls();
+      toast("Réglages du site enregistrés.");
+    } catch (error) {
+      toast(error.message || "Enregistrement impossible.");
+    } finally { button.disabled = false; }
+  }
+
+  async function loadSuperAdminData() {
+    if (currentProfile?.role !== "super_admin") return;
+    const status = $("sa-status");
+    if (status) status.textContent = "Mise à jour…";
+    try {
+      const [dashboard, memberData, adminData, sessionData, logData, control] = await Promise.all([
+        superAdminRequest("dashboard"),
+        superAdminRequest("list_members"),
+        superAdminRequest("list_admins"),
+        superAdminRequest("list_sessions"),
+        superAdminRequest("list_logs"),
+        client.from("site_control").select("maintenance_enabled,maintenance_message,registrations_enabled").eq("id", 1).maybeSingle()
+      ]);
+      if (control.error) throw control.error;
+      siteControl = control.data || siteControl;
+      const stats = dashboard.stats || {};
+      const statItems = [
+        ["Membres", stats.members || 0], ["Administrateurs", stats.admins || 0],
+        ["Parties", stats.sessions || 0], ["À venir", stats.upcoming || 0],
+        ["Inscriptions aux parties", stats.registrations || 0]
+      ];
+      $("sa-stats").innerHTML = statItems.map(item => '<div class="sa-stat"><strong>' + Number(item[1]).toLocaleString("fr-FR") + '</strong><span>' + item[0] + '</span></div>').join("");
+      $("sa-maintenance").checked = !!siteControl.maintenance_enabled;
+      $("sa-signups").checked = !!siteControl.registrations_enabled;
+      $("sa-maintenance-message").value = siteControl.maintenance_message || "";
+      window.saMembers = memberData.members || [];
+      window.saSessions = sessionData.sessions || [];
+      renderSuperAdminMembers(window.saMembers);
+      $("sa-admins").innerHTML = (adminData.members || []).length ? adminData.members.map(m =>
+        '<div class="sa-row"><div class="sa-row-main"><strong>' + escapeHtml([m.username, m.first_name, m.last_name].filter(Boolean).join(" · ") || "Administrateur") + '</strong><small>' + escapeHtml(m.email || "") + '</small><small>' + escapeHtml(m.role) + ' · ' + escapeHtml(m.account_status || "active") + '</small></div></div>'
+      ).join("") : '<div class="empty-state">Aucun administrateur supplémentaire.</div>';
+      $("sa-sessions").innerHTML = window.saSessions.length ? window.saSessions.map(s =>
+        '<div class="sa-row"><div class="sa-row-main"><strong>🎲 ' + escapeHtml(s.game_name) + '</strong><small>📅 ' + escapeHtml(dateText(s.session_date)) + ' · ' + Number(s.participant_count || 0) + '/' + Number(s.max_players) + ' joueurs</small></div><div class="sa-row-actions"><button class="btn btn-light" type="button" data-sa-edit-session="' + escapeHtml(s.id) + '">Modifier</button><button class="btn btn-light" type="button" data-sa-delete-session="' + escapeHtml(s.id) + '">Supprimer</button></div></div>'
+      ).join("") : '<div class="empty-state">Aucune partie enregistrée.</div>';
+      $("sa-logs").innerHTML = (logData.logs || []).length ? logData.logs.map(log =>
+        '<div class="sa-log"><strong>' + escapeHtml(log.action) + '</strong><small>' + escapeHtml(log.actor_email || "Compte inconnu") + ' · ' + escapeHtml(new Date(log.created_at).toLocaleString("fr-FR")) + '</small><small>' + escapeHtml(log.target_label || "") + '</small></div>'
+      ).join("") : '<div class="empty-state">Aucune action enregistrée pour le moment.</div>';
+      if (status) status.textContent = "Données actualisées.";
+    } catch (error) {
+      console.error("Centre Super-Administrateur :", error);
+      if (status) status.textContent = "Erreur de chargement : " + (error.message || "inconnue");
+      toast("Impossible de charger le centre Super-Administrateur.");
+    }
+  }
+
+  async function loadSuperAdmin() {
+    const allowed = currentProfile?.role === "super_admin";
+    $("super-admin-nav")?.classList.toggle("hidden", !allowed);
+    $("super-admin-section")?.classList.toggle("hidden", !allowed);
+    if (!allowed) {
+      $("super-admin-content").innerHTML = "";
+      superAdminUIReady = false;
+      return;
+    }
+    setupSuperAdminUI();
+    await loadSuperAdminData();
+  }
+
+
   async function signInWithPasskey() {
     const button = $("passkey-login-btn");
     if (button) { button.disabled = true; button.textContent = "Connexion en cours…"; }
@@ -648,6 +891,7 @@
     try {
       client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
       setupPasskeyUI();
+      await loadPublicSiteControl();
     } catch (error) {
       console.error("Initialisation Supabase impossible :", error);
       toast("Impossible d'initialiser la connexion : " + error.message);
@@ -667,6 +911,8 @@
         if (error) throw error;
         currentUser = null;
         currentProfile = null;
+        $("super-admin-nav")?.classList.add("hidden");
+        $("super-admin-section")?.classList.add("hidden");
         await refreshAuth();
         toast("Déconnexion effectuée.");
       } catch (error) {
