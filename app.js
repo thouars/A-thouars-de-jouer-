@@ -638,6 +638,16 @@
     // un formulaire contenant des champs obligatoires masqués.
     $("auth-form").noValidate = true;
     $("auth-form").addEventListener("submit", handleAuthSubmit);
+    $("password-toggle")?.addEventListener("click", () => {
+      const field = $("password");
+      const button = $("password-toggle");
+      if (!field || !button) return;
+      const showing = field.type === "password";
+      field.type = showing ? "text" : "password";
+      button.textContent = showing ? "🙈" : "👁️";
+      button.setAttribute("aria-label", showing ? "Masquer le mot de passe" : "Afficher le mot de passe");
+      button.setAttribute("aria-pressed", String(showing));
+    });
     $("logout-btn")?.addEventListener("click", async () => {
       try {
         const { error } = await client.auth.signOut();
