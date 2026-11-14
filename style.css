@@ -19,3 +19,15 @@
 @media (max-width: 520px) {
   .passkey-item { align-items: flex-start; flex-direction: column; }
 }
+
+/* Bouton afficher/masquer le mot de passe */
+.password-field { position: relative; display: flex; align-items: center; }
+.password-field input { width: 100%; padding-right: 52px; }
+.password-toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 38px; display: grid; place-items: center;
+  border: 0; border-radius: 10px; background: transparent;
+  cursor: pointer; font-size: 19px;
+}
+.password-toggle:hover { background: #eee8ff; }
+.password-toggle:focus-visible { outline: 2px solid var(--purple, #6d4aff); outline-offset: 2px; }
