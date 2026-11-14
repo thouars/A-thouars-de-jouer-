@@ -53,6 +53,8 @@
     if (/profiles_username_unique|duplicate key value.*username|unique constraint/i.test(message)) return "Ce pseudo est déjà utilisé. Choisis-en un autre.";
     if (/password should be at least/i.test(message)) return "Le mot de passe doit contenir au moins 8 caractères.";
     if (/rate limit|too many requests/i.test(message)) return "Trop de tentatives. Attends un peu avant de réessayer.";
+    if (/passkey_disabled/i.test(message)) return "La connexion par clé d’accès n’est pas encore activée dans les réglages Supabase.";
+    if (/not supported|webauthn|passkey/i.test(message)) return "Cette clé d’accès n’a pas pu être utilisée. Vérifie que ton appareil et ton navigateur la prennent en charge.";
     return message;
   }
 
@@ -191,6 +193,7 @@
 
   async function loadApp() {
     await loadProfile();
+    await loadPasskeys();
     await loadSessions();
     await loadHistory();
     if (["admin", "super_admin"].includes(currentProfile?.role)) {
@@ -503,6 +506,103 @@
     }
   }
 
+  async function signInWithPasskey() {
+    const button = $("passkey-login-btn");
+    if (button) { button.disabled = true; button.textContent = "Connexion en cours…"; }
+    try {
+      if (!client?.auth?.signInWithPasskey) throw new Error("La bibliothèque Supabase ne prend pas en charge les clés d’accès.");
+      const { error } = await client.auth.signInWithPasskey();
+      if (error) throw error;
+      toast("Connexion avec la clé d’accès réussie !");
+      await refreshAuth();
+    } catch (error) {
+      console.error("Connexion par clé d’accès impossible :", error);
+      toast(friendlyAuthError(error));
+    } finally {
+      if (button) { button.disabled = false; button.textContent = "Se connecter avec une clé d’accès 🔐"; }
+    }
+  }
+
+  async function registerPasskey() {
+    const button = $("passkey-register-btn");
+    if (button) { button.disabled = true; button.textContent = "Enregistrement…"; }
+    try {
+      if (!client?.auth?.registerPasskey) throw new Error("La bibliothèque Supabase ne prend pas en charge les clés d’accès.");
+      const { error } = await client.auth.registerPasskey();
+      if (error) throw error;
+      toast("Clé d’accès ajoutée à ton compte !");
+      await loadPasskeys();
+    } catch (error) {
+      console.error("Ajout de clé d’accès impossible :", error);
+      toast(friendlyAuthError(error));
+    } finally {
+      if (button) { button.disabled = false; button.textContent = "Ajouter une clé d’accès 🔐"; }
+    }
+  }
+
+  async function loadPasskeys() {
+    const box = $("passkey-list");
+    if (!box || !currentUser) return;
+    if (!client?.auth?.passkey?.list) {
+      box.textContent = "La gestion des clés d’accès n’est pas disponible dans cette version.";
+      return;
+    }
+    try {
+      const { data, error } = await client.auth.passkey.list();
+      if (error) throw error;
+      const items = Array.isArray(data) ? data : (data?.passkeys || []);
+      if (!items.length) {
+        box.textContent = "Aucune clé d’accès enregistrée pour le moment.";
+        return;
+      }
+      box.innerHTML = items.map(item => `
+        <div class="passkey-item">
+          <span>🔑 ${escapeHtml(item.friendly_name || "Clé d’accès")}<small>Ajoutée le ${escapeHtml(new Date(item.created_at).toLocaleDateString("fr-FR"))}</small></span>
+          <button class="btn btn-light" type="button" data-remove-passkey="${escapeHtml(item.id)}">Retirer</button>
+        </div>`).join("");
+      box.querySelectorAll("[data-remove-passkey]").forEach(button => {
+        button.addEventListener("click", async () => {
+          if (!confirm("Retirer cette clé d’accès de ton compte ?")) return;
+          button.disabled = true;
+          try {
+            const { error } = await client.auth.passkey.delete({ passkeyId: button.dataset.removePasskey });
+            if (error) throw error;
+            toast("Clé d’accès retirée.");
+            await loadPasskeys();
+          } catch (error) {
+            toast(friendlyAuthError(error));
+            button.disabled = false;
+          }
+        });
+      });
+    } catch (error) {
+      console.error("Chargement des clés d’accès impossible :", error);
+      box.textContent = friendlyAuthError(error);
+    }
+  }
+
+  function setupPasskeyUI() {
+    const submit = $("auth-submit");
+    if (submit && !$("passkey-login-btn")) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.id = "passkey-login-btn";
+      button.className = "btn btn-light full passkey-login";
+      button.textContent = "Se connecter avec une clé d’accès 🔐";
+      button.addEventListener("click", signInWithPasskey);
+      submit.insertAdjacentElement("afterend", button);
+    }
+    const panel = document.querySelector(".profile-panel");
+    if (panel && !$("passkey-settings")) {
+      const section = document.createElement("section");
+      section.id = "passkey-settings";
+      section.className = "passkey-settings";
+      section.innerHTML = '<h3>Clés d’accès 🔐</h3><p class="hint">Ajoute une clé pour te connecter avec le verrouillage de ton appareil, sans saisir ton mot de passe.</p><button id="passkey-register-btn" class="btn btn-light full" type="button">Ajouter une clé d’accès 🔐</button><div id="passkey-list" class="passkey-list" aria-live="polite"></div>';
+      panel.appendChild(section);
+      $("passkey-register-btn").addEventListener("click", registerPasskey);
+    }
+  }
+
   function start() {
     const requiredIds = ["toast", "auth-form", "auth-section", "app-section", "email", "password"];
     const missing = requiredIds.filter(id => !$(id));
@@ -524,6 +624,7 @@
 
     try {
       client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
+      setupPasskeyUI();
     } catch (error) {
       console.error("Initialisation Supabase impossible :", error);
       toast("Impossible d'initialiser la connexion : " + error.message);
