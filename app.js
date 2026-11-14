@@ -214,7 +214,6 @@
     if (siteControl.maintenance_enabled && currentProfile?.role !== "super_admin") {
       $("app-section")?.classList.add("hidden");
       $("auth-section")?.classList.remove("hidden");
-      $("auth-form")?.classList.add("hidden");
       $("site-notice")?.classList.remove("hidden");
       return;
     } else {
