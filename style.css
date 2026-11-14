@@ -39,3 +39,9 @@
 
 /* Affichage forcé des logos dans la bannière */
 .hero-art span img{display:block!important;visibility:visible!important;opacity:1!important;width:82%!important;height:82%!important;max-width:100%;max-height:100%;object-fit:contain!important;border-radius:50%;}
+
+/* Fix: empêcher les images du hero d’agrandir les colonnes de la grille */
+.hero-art{display:grid!important;grid-template-columns:repeat(2,84px)!important;grid-auto-rows:84px!important;gap:12px!important;flex:0 0 auto!important;width:max-content!important;min-width:0!important;}
+.hero-art span{display:flex!important;align-items:center!important;justify-content:center!important;width:84px!important;height:84px!important;min-width:0!important;min-height:0!important;max-width:84px!important;max-height:84px!important;overflow:hidden!important;box-sizing:border-box!important;}
+.hero-art span img{display:block!important;width:64px!important;height:64px!important;min-width:0!important;min-height:0!important;max-width:64px!important;max-height:64px!important;object-fit:contain!important;flex:none!important;}
+@media(max-width:760px){.hero-art{grid-template-columns:repeat(2,55px)!important;grid-auto-rows:55px!important;gap:8px!important}.hero-art span{width:55px!important;height:55px!important;max-width:55px!important;max-height:55px!important}.hero-art span img{width:44px!important;height:44px!important;max-width:44px!important;max-height:44px!important}}
