@@ -54,6 +54,7 @@
 
   function friendlyAuthError(error) {
     const message = error?.message || "Une erreur inconnue est survenue.";
+    if (/INSCRIPTIONS_FERMEES/i.test(message)) return "Les inscriptions sont temporairement désactivées.";
     if (/invalid login credentials/i.test(message)) return "Adresse e-mail ou mot de passe incorrect.";
     if (/email not confirmed/i.test(message)) return "Ton adresse e-mail n'est pas encore confirmée. Vérifie ta boîte mail.";
     if (/user already registered/i.test(message)) return "Un compte existe déjà avec cette adresse e-mail.";
@@ -537,8 +538,6 @@
   }
 
 
-  let siteControl = { maintenance_enabled: false, maintenance_message: "", registrations_enabled: true };
-  let superAdminUIReady = false;
 
   async function loadPublicSiteControl() {
     try {
@@ -856,7 +855,7 @@
     }
   }
 
-  function start() {
+  async function start() {
     // Le bouton œil fonctionne indépendamment de Supabase.
     const passwordToggle = $("password-toggle");
     passwordToggle?.addEventListener("click", (event) => {
