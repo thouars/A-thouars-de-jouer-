@@ -604,6 +604,19 @@
   }
 
   function start() {
+    // Le bouton œil fonctionne indépendamment de Supabase.
+    const passwordToggle = $("password-toggle");
+    passwordToggle?.addEventListener("click", (event) => {
+      event.preventDefault();
+      const field = $("password");
+      if (!field) return;
+      const showing = field.type === "password";
+      field.type = showing ? "text" : "password";
+      passwordToggle.textContent = showing ? "🙈" : "👁️";
+      passwordToggle.setAttribute("aria-label", showing ? "Masquer le mot de passe" : "Afficher le mot de passe");
+      passwordToggle.setAttribute("aria-pressed", String(showing));
+      field.focus();
+    });
     const requiredIds = ["toast", "auth-form", "auth-section", "app-section", "email", "password"];
     const missing = requiredIds.filter(id => !$(id));
     if (missing.length) {
@@ -638,16 +651,6 @@
     // un formulaire contenant des champs obligatoires masqués.
     $("auth-form").noValidate = true;
     $("auth-form").addEventListener("submit", handleAuthSubmit);
-    $("password-toggle")?.addEventListener("click", () => {
-      const field = $("password");
-      const button = $("password-toggle");
-      if (!field || !button) return;
-      const showing = field.type === "password";
-      field.type = showing ? "text" : "password";
-      button.textContent = showing ? "🙈" : "👁️";
-      button.setAttribute("aria-label", showing ? "Masquer le mot de passe" : "Afficher le mot de passe");
-      button.setAttribute("aria-pressed", String(showing));
-    });
     $("logout-btn")?.addEventListener("click", async () => {
       try {
         const { error } = await client.auth.signOut();
