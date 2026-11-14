@@ -36,3 +36,6 @@
 .hero-art span { overflow: hidden; }
 .hero-art span img { width: 76%; height: 76%; object-fit: contain; border-radius: 50%; filter: drop-shadow(0 3px 5px #35205b30); }
 @media(max-width:760px){.hero-art span img{width:82%;height:82%;}}
+
+/* Affichage forcé des logos dans la bannière */
+.hero-art span img{display:block!important;visibility:visible!important;opacity:1!important;width:82%!important;height:82%!important;max-width:100%;max-height:100%;object-fit:contain!important;border-radius:50%;}
